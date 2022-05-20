@@ -3,6 +3,7 @@ module auth-jwt-server
 go 1.18
 
 require (
+	github.com/dgrijalva/jwt-go v3.2.0+incompatible
 	github.com/go-sql-driver/mysql v1.6.0
 	github.com/jmoiron/sqlx v1.3.5
 	github.com/joho/godotenv v1.4.0
@@ -12,6 +13,7 @@ require (
 )
 
 require (
-	github.com/dgrijalva/jwt-go v3.2.0+incompatible // indirect
+	github.com/stretchr/testify v1.7.0 // indirect
 	golang.org/x/sys v0.0.0-20210615035016-665e8c7367d1 // indirect
+	gopkg.in/yaml.v3 v3.0.0-20210107192922-496545a6307b // indirect
 )
