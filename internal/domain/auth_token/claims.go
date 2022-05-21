@@ -1,4 +1,4 @@
-package claims
+package auth_token
 
 import (
 	"github.com/dgrijalva/jwt-go"
@@ -10,19 +10,16 @@ const ACCESS_TOKEN_DURATION = time.Hour
 const REFRESH_TOKEN_DURATION = time.Hour * 24 * 30
 
 type RefreshTokenClaims struct {
-	TokenType  string   `json:"token_type"`
-	CustomerId string   `json:"cid"`
-	Accounts   []string `json:"accounts"`
-	Username   string   `json:"un"`
-	Role       string   `json:"role"`
+	TokenType string `json:"token_type"`
+	UserID    int    `json:"user_id"`
+	Email     string `json:"email"`
+	Role      string `json:"role"`
 	jwt.StandardClaims
 }
 
 type AccessTokenClaims struct {
-	CustomerId string   `json:"customer_id"`
-	Accounts   []string `json:"accounts"`
-	Username   string   `json:"username"`
-	Role       string   `json:"role"`
+	Email string `json:"email"`
+	Role  string `json:"role"`
 	jwt.StandardClaims
 }
 
@@ -31,7 +28,12 @@ func (c AccessTokenClaims) IsUserRole() bool {
 }
 
 func (c AccessTokenClaims) IsRequestVerifiedWithTokenClaims(urlParams map[string]string) bool {
-	if c.CustomerId != urlParams["customer_id"] {
+	email, ok := urlParams["email"]
+	if !ok {
+		return false
+	}
+
+	if c.Email != email {
 		return false
 	}
 
@@ -40,11 +42,9 @@ func (c AccessTokenClaims) IsRequestVerifiedWithTokenClaims(urlParams map[string
 
 func (c AccessTokenClaims) RefreshTokenClaims() RefreshTokenClaims {
 	return RefreshTokenClaims{
-		TokenType:  "refresh_token",
-		CustomerId: c.CustomerId,
-		Accounts:   c.Accounts,
-		Username:   c.Username,
-		Role:       c.Role,
+		TokenType: "refresh_token",
+		Email:     c.Email,
+		Role:      c.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(REFRESH_TOKEN_DURATION).Unix(),
 		},
@@ -53,10 +53,8 @@ func (c AccessTokenClaims) RefreshTokenClaims() RefreshTokenClaims {
 
 func (c RefreshTokenClaims) AccessTokenClaims() AccessTokenClaims {
 	return AccessTokenClaims{
-		CustomerId: c.CustomerId,
-		Accounts:   c.Accounts,
-		Username:   c.Username,
-		Role:       c.Role,
+		Email: c.Email,
+		Role:  c.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
 		},
