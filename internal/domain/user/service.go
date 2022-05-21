@@ -2,6 +2,7 @@ package user
 
 import (
 	"auth-jwt-server/pkg/apperrors"
+	"database/sql"
 )
 
 type Service interface {
@@ -19,10 +20,13 @@ func NewService(storage Storage) Service {
 }
 
 func (s *service) FindUserByEmail(email string) (*User, *apperrors.AppError) {
-
 	user, err := s.storage.FindUserByEmail(email)
-	if err != nil {
+	if err == sql.ErrNoRows {
 		return nil, apperrors.NewNotFoundError("User not found")
+	}
+
+	if err != nil {
+		return nil, apperrors.NewUnexpectedError("Unexpected error")
 	}
 
 	return user, nil

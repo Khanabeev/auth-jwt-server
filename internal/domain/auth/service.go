@@ -31,18 +31,62 @@ func NewService(storage user.Storage, userService user.Service, authStorage Stor
 }
 
 func (s *service) Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppError) {
-	return nil, nil
-}
-func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apperrors.AppError) {
-	var u user.User
+	// Validation
+	validation := dto.Validate()
+	if validation != nil {
+		return nil, apperrors.NewValidationError("Validation error", validation)
+	}
 
-	err := dto.Validate()
-	if err != nil {
-		return nil, apperrors.NewValidationError(err.Error())
+	searchUser, appError := s.userService.FindUserByEmail(dto.Email)
+	if appError != nil {
+		return nil, apperrors.NewAuthenticationError("Incorrect credentials")
+	}
+
+	ok := password_hash.CheckPasswordHash(dto.Password, searchUser.Password)
+	if !ok {
+		return nil, apperrors.NewAuthenticationError("Incorrect credentials")
+	}
+
+	authTokenClaims := auth_token.AccessTokenClaims{
+		Email:          dto.Email,
+		Role:           "user",
+		StandardClaims: jwt.StandardClaims{},
+	}
+
+	authToken := auth_token.NewAuthToken(authTokenClaims)
+	var accessToken, refreshToken string
+
+	accessToken, appErr := authToken.NewAccessToken()
+
+	if appErr != nil {
+		return nil, appErr
+	}
+
+	if accessToken, appErr = authToken.NewAccessToken(); appErr != nil {
+		return nil, appErr
+	}
+
+	if refreshToken, appErr = s.authStorage.GenerateAndSaveRefreshTokenToStore(authToken, searchUser.ID); appErr != nil {
+		return nil, appErr
+	}
+
+	response := &LoginResponseDTO{
+		AccessToken:  accessToken,
+		RefreshToken: refreshToken,
+	}
+
+	return response, nil
+}
+
+func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apperrors.AppError) {
+	// Validation
+	validation := dto.Validate()
+	if validation != nil {
+		return nil, apperrors.NewValidationError("Validation error", validation)
 	}
 
 	if searchUser, _ := s.userService.FindUserByEmail(dto.Email); searchUser != nil {
-		return nil, apperrors.NewValidationError("User already exists")
+		return nil, apperrors.NewValidationError("Validation error", []string{"User already exists"})
 	}
 
 	logger := logging.GetLogger()
@@ -67,12 +111,15 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 		return nil, appErr
 	}
 
-	u.Email = dto.Email
-	u.Password = pass
-	u.Status = 1
-	u.Role = "user"
+	u := &user.User{
+		ID:       0,
+		Email:    dto.Email,
+		Password: pass,
+		Status:   1,
+		Role:     "user",
+	}
 
-	newUser, err := s.userStorage.CreateNewUser(&u)
+	newUser, err := s.userStorage.CreateNewUser(u)
 	if err != nil {
 		return nil, apperrors.NewUnexpectedError("Unexpected error")
 	}

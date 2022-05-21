@@ -11,7 +11,6 @@ const REFRESH_TOKEN_DURATION = time.Hour * 24 * 30
 
 type RefreshTokenClaims struct {
 	TokenType string `json:"token_type"`
-	UserID    int    `json:"user_id"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	jwt.StandardClaims
@@ -52,6 +51,20 @@ func (c AccessTokenClaims) RefreshTokenClaims() RefreshTokenClaims {
 }
 
 func (c RefreshTokenClaims) AccessTokenClaims() AccessTokenClaims {
+	return AccessTokenClaims{
+		Email: c.Email,
+		Role:  c.Role,
+		StandardClaims: jwt.StandardClaims{
+			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
+		},
+	}
+}
+
+func (c AccessTokenClaims) ClaimsForAccessToken() AccessTokenClaims {
+	return c.claimsForUser()
+}
+
+func (c AccessTokenClaims) claimsForUser() AccessTokenClaims {
 	return AccessTokenClaims{
 		Email: c.Email,
 		Role:  c.Role,

@@ -2,36 +2,18 @@ package auth
 
 import (
 	"auth-jwt-server/internal/domain/auth_token"
-	"auth-jwt-server/internal/domain/user"
+	"auth-jwt-server/pkg/input_validator"
 	"errors"
-	"fmt"
 	"github.com/dgrijalva/jwt-go"
-	"github.com/go-playground/validator/v10"
 )
 
 type RegisterRequestDTO struct {
 	Email    string `json:"email" validate:"required,email"`
-	Password string `json:"password" validate:"required"`
+	Password string `json:"password" validate:"required,gte=6"`
 }
 
-func (r *RegisterRequestDTO) Validate() error {
-	v := validator.New()
-	err := v.Struct(r)
-	if err != nil {
-		for _, e := range err.(validator.ValidationErrors) {
-			fmt.Println(e)
-		}
-		return err
-	}
-
-	return nil
-}
-
-func (r *RegisterRequestDTO) IsUserExist(service user.Service) bool {
-	if u, _ := service.FindUserByEmail(r.Email); u != nil {
-		return true
-	}
-	return false
+func (r *RegisterRequestDTO) Validate() []string {
+	return input_validator.NewInputValidator().Validate(r)
 }
 
 type RegisterResponseDTO struct {
@@ -41,8 +23,12 @@ type RegisterResponseDTO struct {
 }
 
 type LoginRequestDTO struct {
-	Email    string `json:"email"`
-	Password string `json:"password"`
+	Email    string `json:"email" validate:"required,email"`
+	Password string `json:"password" validate:"required,gte=6"`
+}
+
+func (r *LoginRequestDTO) Validate() []string {
+	return input_validator.NewInputValidator().Validate(r)
 }
 
 type LoginResponseDTO struct {

@@ -1,15 +1,19 @@
 package apperrors
 
-import "net/http"
+import (
+	"net/http"
+)
 
 type AppError struct {
-	Code    int    `json:",omitempty"`
-	Message string `json:"message"`
+	Code    int      `json:",omitempty"`
+	Message string   `json:"message"`
+	Errors  []string `json:"errors,omitempty"`
 }
 
 func (ae *AppError) AsMessage() *AppError {
 	return &AppError{
 		Message: ae.Message,
+		Errors:  ae.Errors,
 	}
 }
 
@@ -27,10 +31,11 @@ func NewUnexpectedError(message string) *AppError {
 	}
 }
 
-func NewValidationError(message string) *AppError {
+func NewValidationError(message string, errorsList []string) *AppError {
 	return &AppError{
 		Message: message,
 		Code:    http.StatusUnprocessableEntity,
+		Errors:  errorsList,
 	}
 }
 

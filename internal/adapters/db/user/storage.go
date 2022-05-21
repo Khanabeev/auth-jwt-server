@@ -19,10 +19,14 @@ func NewStorage(client *sqlx.DB) user.Storage {
 
 func (s *storage) FindUserByEmail(email string) (*user.User, error) {
 	var u user.User
-	query := "SELECT * FROM users WHERE email = ?;"
-	row := s.client.QueryRowx(query, email)
-	err := row.Scan(&u)
+	query := "SELECT id, email, password, status, role FROM users WHERE email = ? AND deleted_at IS NULL;"
+	err := s.client.Get(&u, query, email)
 	if err == sql.ErrNoRows {
+		return nil, err
+	}
+	if err != nil {
+		logger := logging.GetLogger()
+		logger.Error("Unexpected error while finding user by Email: " + err.Error())
 		return nil, err
 	}
 
