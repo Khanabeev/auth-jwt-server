@@ -6,7 +6,6 @@ import (
 	"auth-jwt-server/pkg/apperrors"
 	"auth-jwt-server/pkg/logging"
 	"database/sql"
-	"errors"
 	"github.com/jmoiron/sqlx"
 )
 
@@ -19,17 +18,17 @@ func NewStorage(client *sqlx.DB) auth.Storage {
 		client: client,
 	}
 }
-func (s *storage) RefreshTokenExists(refreshToken string) error {
+func (s *storage) RefreshTokenExists(refreshToken string) *apperrors.AppError {
 	sqlSelect := "select refresh_token from refresh_tokens where refresh_token = ?"
 	var checkToken string
 	err := s.client.Get(&checkToken, sqlSelect, refreshToken)
 	if err != nil {
 		if err == sql.ErrNoRows {
-			return errors.New("refresh token not registered")
+			return apperrors.NewAuthenticationError("refresh token not registered")
 		} else {
 			logger := logging.GetLogger()
 			logger.Errorf("Unexpected database error: %s", err.Error())
-			return errors.New("unexpected database error")
+			return apperrors.NewAuthenticationError("unexpected database error")
 		}
 	}
 	return nil

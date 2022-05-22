@@ -6,6 +6,7 @@ import (
 	"auth-jwt-server/pkg/apperrors"
 	"auth-jwt-server/pkg/logging"
 	"auth-jwt-server/pkg/password_hash"
+	"fmt"
 	"github.com/dgrijalva/jwt-go"
 )
 
@@ -17,9 +18,10 @@ type Service interface {
 }
 
 type service struct {
-	userStorage user.Storage
-	authStorage Storage
-	userService user.Service
+	userStorage     user.Storage
+	authStorage     Storage
+	userService     user.Service
+	rolePermissions RolePermissions
 }
 
 func NewService(storage user.Storage, userService user.Service, authStorage Storage) Service {
@@ -140,8 +142,65 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 }
 
 func (s *service) Verify(urlParams map[string]string) *apperrors.AppError {
-	return nil
+	// convert the string token to JWT struct
+	if jwtToken, err := jwtTokenFromString(urlParams["token"]); err != nil {
+		return apperrors.NewAuthenticationError(err.Error())
+	} else {
+		/*
+		   Checking the validity of the token, this verifies the expiry
+		   time and the signature of the token
+		*/
+		if jwtToken.Valid {
+			// type cast the token claims to jwt.MapClaims
+			claims := jwtToken.Claims.(*auth_token.AccessTokenClaims)
+			//if claims.IsUserRole() {
+			//
+			//	if !claims.IsRequestVerifiedWithTokenClaims(urlParams) {
+			//		return apperrors.NewAuthenticationError("request not verified with the token claims")
+			//	}
+			//}
+			// verify of the role is authorized to use the route
+			isAuthorized := s.rolePermissions.IsAuthorizedFor(claims.Role, urlParams["routeName"])
+			if !isAuthorized {
+				return apperrors.NewAuthenticationError(fmt.Sprintf("%s role is not authorized", claims.Role))
+			}
+			return nil
+		} else {
+			return apperrors.NewAuthenticationError("Invalid token")
+		}
+	}
 }
 func (s *service) Refresh(request RefreshTokenRequestDTO) (*LoginResponseDTO, *apperrors.AppError) {
-	return nil, nil
+	if vErr := request.IsAccessTokenValid(); vErr != nil {
+		if vErr.Errors == jwt.ValidationErrorExpired {
+			// continue with the refresh token functionality
+			var appErr *apperrors.AppError
+			if appErr = s.authStorage.RefreshTokenExists(request.RefreshToken); appErr != nil {
+				return nil, appErr
+			}
+			// generate a access token from refresh token.
+			var accessToken string
+			if accessToken, appErr = auth_token.NewAccessTokenFromRefreshToken(request.RefreshToken); appErr != nil {
+				return nil, appErr
+			}
+			response := &LoginResponseDTO{
+				AccessToken:  accessToken,
+				RefreshToken: "",
+			}
+			return response, nil
+		}
+		return nil, apperrors.NewAuthenticationError("invalid token")
+	}
+	return nil, apperrors.NewAuthenticationError("cannot generate a new access token until the current one expires")
+}
+
+func jwtTokenFromString(tokenString string) (*jwt.Token, error) {
+	token, err := jwt.ParseWithClaims(tokenString, &auth_token.AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
+		return []byte(auth_token.HMAC_SAMPLE_SECRET), nil
+	})
+	if err != nil {
+		fmt.Println("Error while parsing token: " + err.Error())
+		return nil, err
+	}
+	return token, nil
 }

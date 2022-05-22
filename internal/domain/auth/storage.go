@@ -7,5 +7,5 @@ import (
 
 type Storage interface {
 	GenerateAndSaveRefreshTokenToStore(authToken auth_token.AuthToken, userId int) (string, *apperrors.AppError)
-	RefreshTokenExists(refreshToken string) error
+	RefreshTokenExists(refreshToken string) *apperrors.AppError
 }
