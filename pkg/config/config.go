@@ -1,9 +1,11 @@
 package config
 
 import (
+	"auth-jwt-server/pkg/logging"
 	"fmt"
 	"github.com/joho/godotenv"
 	"os"
+	"strings"
 )
 
 func Load(localEnvFile string) error {
@@ -30,10 +32,8 @@ func Check(envVars []string) error {
 	}
 
 	if len(emptyVars) > 0 {
-		fmt.Println("EMPTY ENVIRONMENT VARIABLES: ")
-		for _, e := range envVars {
-			fmt.Println(e)
-		}
+		logger := logging.GetLogger()
+		logger.Error("Empty environment variables: " + strings.Join(emptyVars[:], ","))
 		lenAllVars := len(envVars)
 		lenEmptyVars := len(emptyVars)
 		return fmt.Errorf("environment needs %d variables, but received only %d", lenAllVars, lenAllVars-lenEmptyVars)
