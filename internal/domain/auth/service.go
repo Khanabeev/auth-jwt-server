@@ -100,21 +100,6 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 		return nil, apperrors.NewUnexpectedError("Unexpected error")
 	}
 
-	authTokenClaims := auth_token.AccessTokenClaims{
-		Email:          dto.Email,
-		Role:           "user",
-		StandardClaims: jwt.StandardClaims{},
-	}
-
-	authToken := auth_token.NewAuthToken(authTokenClaims)
-	var accessToken, refreshToken string
-
-	accessToken, appErr := authToken.NewAccessToken()
-
-	if appErr != nil {
-		return nil, appErr
-	}
-
 	u := &user.User{
 		ID:       0,
 		Email:    dto.Email,
@@ -128,6 +113,21 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 		return nil, apperrors.NewUnexpectedError("Unexpected error")
 	}
 
+	authTokenClaims := auth_token.AccessTokenClaims{
+		UserID:         newUser.ID,
+		Email:          dto.Email,
+		Role:           "user",
+		StandardClaims: jwt.StandardClaims{},
+	}
+
+	authToken := auth_token.NewAuthToken(authTokenClaims)
+	var accessToken, refreshToken string
+
+	accessToken, appErr := authToken.NewAccessToken()
+
+	if appErr != nil {
+		return nil, appErr
+	}
 	refreshToken, appErr = s.authStorage.GenerateAndSaveRefreshTokenToStore(authToken, newUser.ID)
 
 	if appErr != nil {
