@@ -1,7 +1,9 @@
 package auth_token
 
 import (
+	"auth-jwt-server/pkg/logging"
 	"github.com/dgrijalva/jwt-go"
+	"strconv"
 	"time"
 )
 
@@ -29,12 +31,19 @@ func (c AccessTokenClaims) IsUserRole() bool {
 }
 
 func (c AccessTokenClaims) IsRequestVerifiedWithTokenClaims(urlParams map[string]string) bool {
-	email, ok := urlParams["email"]
+	userId, ok := urlParams["userId"]
 	if !ok {
 		return false
 	}
 
-	if c.Email != email {
+	id, err := strconv.Atoi(userId)
+	if err != nil {
+		logger := logging.GetLogger()
+		logger.Error(err)
+		return false
+	}
+
+	if c.UserID != id {
 		return false
 	}
 

@@ -71,6 +71,7 @@ func sanityCheck() {
 		"DB_ADDRESS",
 		"DB_PORT",
 		"DB_NAME",
+		"TOKEN_SECRET",
 	}
 
 	err = config.Check(checkVars)

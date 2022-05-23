@@ -4,6 +4,7 @@ import (
 	"auth-jwt-server/pkg/apperrors"
 	"auth-jwt-server/pkg/logging"
 	"github.com/dgrijalva/jwt-go"
+	"os"
 )
 
 type AuthToken struct {
@@ -11,7 +12,7 @@ type AuthToken struct {
 }
 
 func (t AuthToken) NewAccessToken() (string, *apperrors.AppError) {
-	signedString, err := t.token.SignedString([]byte(HMAC_SAMPLE_SECRET))
+	signedString, err := t.token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 	if err != nil {
 		logger := logging.GetLogger()
 		logger.Errorf("Failed while signing access token: %s", err.Error())
@@ -24,7 +25,7 @@ func (t AuthToken) NewRefreshToken() (string, *apperrors.AppError) {
 	c := t.token.Claims.(AccessTokenClaims)
 	refreshClaims := c.RefreshTokenClaims()
 	token := jwt.NewWithClaims(jwt.SigningMethodHS256, refreshClaims)
-	signedString, err := token.SignedString([]byte(HMAC_SAMPLE_SECRET))
+	signedString, err := token.SignedString([]byte(os.Getenv("TOKEN_SECRET")))
 	if err != nil {
 		logger := logging.GetLogger()
 		logger.Errorf("Failed while signing refresh token: %s", err.Error())
@@ -40,7 +41,7 @@ func NewAuthToken(claims AccessTokenClaims) AuthToken {
 
 func NewAccessTokenFromRefreshToken(refreshToken string) (string, *apperrors.AppError) {
 	token, err := jwt.ParseWithClaims(refreshToken, &RefreshTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(HMAC_SAMPLE_SECRET), nil
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 	if err != nil {
 		return "", apperrors.NewAuthenticationError("invalid or expired refresh token")

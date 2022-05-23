@@ -75,11 +75,12 @@ func (h handler) Verify(w http.ResponseWriter, r *http.Request) {
 	}
 
 	if urlParams["token"] != "" {
-		appErr := h.service.Verify(urlParams)
+		// UserId as a first return value
+		response, appErr := h.service.Verify(urlParams)
 		if appErr != nil {
 			api.WriteResponse(w, appErr.Code, notAuthorizedResponse(appErr.Message))
 		} else {
-			api.WriteResponse(w, http.StatusOK, authorizedResponse())
+			api.WriteResponse(w, http.StatusOK, response)
 		}
 	} else {
 		api.WriteResponse(w, http.StatusForbidden, notAuthorizedResponse("missing token"))

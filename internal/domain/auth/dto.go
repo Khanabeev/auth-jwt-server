@@ -1,10 +1,10 @@
 package auth
 
 import (
-	"auth-jwt-server/internal/domain/auth_token"
 	"auth-jwt-server/pkg/input_validator"
 	"errors"
 	"github.com/dgrijalva/jwt-go"
+	"os"
 )
 
 type RegisterRequestDTO struct {
@@ -20,6 +20,11 @@ type RegisterResponseDTO struct {
 	UserId       int    `json:"user_id"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token,omitempty"`
+}
+
+type VerifyResponseDTO struct {
+	UserId     int  `json:"user_id"`
+	IsVerified bool `json:"is_verified"`
 }
 
 type LoginRequestDTO struct {
@@ -46,7 +51,7 @@ func (r *RefreshTokenRequestDTO) IsAccessTokenValid() *jwt.ValidationError {
 	// 1. invalid token.
 	// 2. valid token but expired
 	_, err := jwt.Parse(r.AccessToken, func(token *jwt.Token) (interface{}, error) {
-		return []byte(auth_token.HMAC_SAMPLE_SECRET), nil
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 	if err != nil {
 		var vErr *jwt.ValidationError

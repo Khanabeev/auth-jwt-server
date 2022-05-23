@@ -8,12 +8,13 @@ import (
 	"auth-jwt-server/pkg/password_hash"
 	"fmt"
 	"github.com/dgrijalva/jwt-go"
+	"os"
 )
 
 type Service interface {
 	Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppError)
 	Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apperrors.AppError)
-	Verify(urlParams map[string]string) *apperrors.AppError
+	Verify(urlParams map[string]string) (*VerifyResponseDTO, *apperrors.AppError)
 	Refresh(request RefreshTokenRequestDTO) (*LoginResponseDTO, *apperrors.AppError)
 }
 
@@ -142,10 +143,10 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 	return response, nil
 }
 
-func (s *service) Verify(urlParams map[string]string) *apperrors.AppError {
+func (s *service) Verify(urlParams map[string]string) (*VerifyResponseDTO, *apperrors.AppError) {
 	// convert the string token to JWT struct
 	if jwtToken, err := jwtTokenFromString(urlParams["token"]); err != nil {
-		return apperrors.NewAuthenticationError(err.Error())
+		return nil, apperrors.NewAuthenticationError(err.Error())
 	} else {
 		/*
 		   Checking the validity of the token, this verifies the expiry
@@ -155,7 +156,6 @@ func (s *service) Verify(urlParams map[string]string) *apperrors.AppError {
 			// type cast the token claims to jwt.MapClaims
 			claims := jwtToken.Claims.(*auth_token.AccessTokenClaims)
 			//if claims.IsUserRole() {
-			//
 			//	if !claims.IsRequestVerifiedWithTokenClaims(urlParams) {
 			//		return apperrors.NewAuthenticationError("request not verified with the token claims")
 			//	}
@@ -163,11 +163,15 @@ func (s *service) Verify(urlParams map[string]string) *apperrors.AppError {
 			// verify of the role is authorized to use the route
 			isAuthorized := s.rolePermissions.IsAuthorizedFor(claims.Role, urlParams["routeName"])
 			if !isAuthorized {
-				return apperrors.NewAuthenticationError(fmt.Sprintf("%s role is not authorized", claims.Role))
+				return nil, apperrors.NewAuthenticationError(fmt.Sprintf("%s role is not authorized", claims.Role))
 			}
-			return nil
+
+			return &VerifyResponseDTO{
+				UserId:     claims.UserID,
+				IsVerified: true,
+			}, nil
 		} else {
-			return apperrors.NewAuthenticationError("Invalid token")
+			return nil, apperrors.NewAuthenticationError("Invalid token")
 		}
 	}
 }
@@ -197,7 +201,7 @@ func (s *service) Refresh(request RefreshTokenRequestDTO) (*LoginResponseDTO, *a
 
 func jwtTokenFromString(tokenString string) (*jwt.Token, error) {
 	token, err := jwt.ParseWithClaims(tokenString, &auth_token.AccessTokenClaims{}, func(token *jwt.Token) (interface{}, error) {
-		return []byte(auth_token.HMAC_SAMPLE_SECRET), nil
+		return []byte(os.Getenv("TOKEN_SECRET")), nil
 	})
 	if err != nil {
 		fmt.Println("Error while parsing token: " + err.Error())
