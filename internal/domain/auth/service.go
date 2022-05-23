@@ -50,6 +50,7 @@ func (s *service) Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppE
 	}
 
 	authTokenClaims := auth_token.AccessTokenClaims{
+		UserID:         searchUser.ID,
 		Email:          dto.Email,
 		Role:           "user",
 		StandardClaims: jwt.StandardClaims{},

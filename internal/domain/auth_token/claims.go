@@ -11,14 +11,16 @@ const REFRESH_TOKEN_DURATION = time.Hour * 24 * 30
 
 type RefreshTokenClaims struct {
 	TokenType string `json:"token_type"`
+	UserID    int    `json:"user_id"`
 	Email     string `json:"email"`
 	Role      string `json:"role"`
 	jwt.StandardClaims
 }
 
 type AccessTokenClaims struct {
-	Email string `json:"email"`
-	Role  string `json:"role"`
+	UserID int    `json:"user_id"`
+	Email  string `json:"email"`
+	Role   string `json:"role"`
 	jwt.StandardClaims
 }
 
@@ -42,6 +44,7 @@ func (c AccessTokenClaims) IsRequestVerifiedWithTokenClaims(urlParams map[string
 func (c AccessTokenClaims) RefreshTokenClaims() RefreshTokenClaims {
 	return RefreshTokenClaims{
 		TokenType: "refresh_token",
+		UserID:    c.UserID,
 		Email:     c.Email,
 		Role:      c.Role,
 		StandardClaims: jwt.StandardClaims{
@@ -52,8 +55,9 @@ func (c AccessTokenClaims) RefreshTokenClaims() RefreshTokenClaims {
 
 func (c RefreshTokenClaims) AccessTokenClaims() AccessTokenClaims {
 	return AccessTokenClaims{
-		Email: c.Email,
-		Role:  c.Role,
+		UserID: c.UserID,
+		Email:  c.Email,
+		Role:   c.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
 		},
@@ -66,8 +70,9 @@ func (c AccessTokenClaims) ClaimsForAccessToken() AccessTokenClaims {
 
 func (c AccessTokenClaims) claimsForUser() AccessTokenClaims {
 	return AccessTokenClaims{
-		Email: c.Email,
-		Role:  c.Role,
+		UserID: c.UserID,
+		Email:  c.Email,
+		Role:   c.Role,
 		StandardClaims: jwt.StandardClaims{
 			ExpiresAt: time.Now().Add(ACCESS_TOKEN_DURATION).Unix(),
 		},

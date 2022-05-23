@@ -21,6 +21,8 @@ func (p RolePermissions) IsAuthorizedFor(role string, routeName string) bool {
 func GetRolePermissions() RolePermissions {
 	return RolePermissions{map[string][]string{
 		"admin": {},
-		"user":  {"GetUsers"},
+		"user": {
+			"GetUserProfile",
+		},
 	}}
 }
