@@ -12,8 +12,8 @@ import (
 )
 
 type Service interface {
-	Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppError)
-	Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apperrors.AppError)
+	Login(dto LoginRequestDTO) (*UserResponseDTO, *apperrors.AppError)
+	Register(dto RegisterRequestDTO) (*UserResponseDTO, *apperrors.AppError)
 	Verify(urlParams map[string]string) (*VerifyResponseDTO, *apperrors.AppError)
 	Refresh(request RefreshTokenRequestDTO) (*LoginResponseDTO, *apperrors.AppError)
 }
@@ -33,7 +33,7 @@ func NewService(storage user.Storage, userService user.Service, authStorage Stor
 	}
 }
 
-func (s *service) Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppError) {
+func (s *service) Login(dto LoginRequestDTO) (*UserResponseDTO, *apperrors.AppError) {
 	// Validation
 	validation := dto.Validate()
 	if validation != nil {
@@ -74,15 +74,17 @@ func (s *service) Login(dto LoginRequestDTO) (*LoginResponseDTO, *apperrors.AppE
 		return nil, appErr
 	}
 
-	response := &LoginResponseDTO{
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+	response := &UserResponseDTO{
+		User: &LoginResponseDTO{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
 	}
 
 	return response, nil
 }
 
-func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apperrors.AppError) {
+func (s *service) Register(dto RegisterRequestDTO) (*UserResponseDTO, *apperrors.AppError) {
 	// Validation
 	validation := dto.Validate()
 	if validation != nil {
@@ -134,10 +136,11 @@ func (s *service) Register(dto RegisterRequestDTO) (*RegisterResponseDTO, *apper
 		return nil, appErr
 	}
 
-	response := &RegisterResponseDTO{
-		UserId:       newUser.ID,
-		AccessToken:  accessToken,
-		RefreshToken: refreshToken,
+	response := &UserResponseDTO{
+		User: &RegisterResponseDTO{
+			AccessToken:  accessToken,
+			RefreshToken: refreshToken,
+		},
 	}
 
 	return response, nil
@@ -167,7 +170,6 @@ func (s *service) Verify(urlParams map[string]string) (*VerifyResponseDTO, *appe
 			}
 
 			return &VerifyResponseDTO{
-				UserId:     claims.UserID,
 				IsVerified: true,
 			}, nil
 		} else {
@@ -175,7 +177,12 @@ func (s *service) Verify(urlParams map[string]string) (*VerifyResponseDTO, *appe
 		}
 	}
 }
+
 func (s *service) Refresh(request RefreshTokenRequestDTO) (*LoginResponseDTO, *apperrors.AppError) {
+	validation := request.Validate()
+	if validation != nil {
+		return nil, apperrors.NewValidationError("Validation error", validation)
+	}
 	if vErr := request.IsAccessTokenValid(); vErr != nil {
 		if vErr.Errors == jwt.ValidationErrorExpired {
 			// continue with the refresh token functionality

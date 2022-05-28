@@ -16,14 +16,16 @@ func (r *RegisterRequestDTO) Validate() []string {
 	return input_validator.NewInputValidator().Validate(r)
 }
 
+type UserResponseDTO struct {
+	User interface{} `json:"user"`
+}
+
 type RegisterResponseDTO struct {
-	UserId       int    `json:"user_id"`
 	AccessToken  string `json:"access_token"`
 	RefreshToken string `json:"refresh_token,omitempty"`
 }
 
 type VerifyResponseDTO struct {
-	UserId     int  `json:"user_id"`
 	IsVerified bool `json:"is_verified"`
 }
 
@@ -42,8 +44,12 @@ type LoginResponseDTO struct {
 }
 
 type RefreshTokenRequestDTO struct {
-	AccessToken  string `json:"access_token"`
-	RefreshToken string `json:"refresh_token"`
+	AccessToken  string `json:"access_token" validate:"jwt"`
+	RefreshToken string `json:"refresh_token" validate:"jwt"`
+}
+
+func (r *RefreshTokenRequestDTO) Validate() []string {
+	return input_validator.NewInputValidator().Validate(r)
 }
 
 func (r *RefreshTokenRequestDTO) IsAccessTokenValid() *jwt.ValidationError {

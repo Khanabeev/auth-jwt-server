@@ -37,9 +37,7 @@ func (h handler) Register(router *mux.Router) {
 func (h handler) Login(w http.ResponseWriter, r *http.Request) {
 	var loginRequest auth.LoginRequestDTO
 	if err := json.NewDecoder(r.Body).Decode(&loginRequest); err != nil {
-		logger := logging.GetLogger()
-		logger.Error("Error while decoding login request: " + err.Error())
-		api.WriteResponse(w, http.StatusBadRequest, "Bad request")
+		api.WriteResponse(w, http.StatusBadRequest, "Invalid request")
 	} else {
 		token, appErr := h.service.Login(loginRequest)
 		if appErr != nil {

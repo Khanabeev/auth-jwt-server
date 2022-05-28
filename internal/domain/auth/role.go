@@ -23,6 +23,10 @@ func GetRolePermissions() RolePermissions {
 		"admin": {},
 		"user": {
 			"GetUserProfile",
+			"CreateGoal",
+			"GetGoal",
+			"UpdateGoal",
+			"DeleteGoal",
 		},
 	}}
 }
