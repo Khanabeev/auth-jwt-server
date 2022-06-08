@@ -25,6 +25,7 @@ func GetRolePermissions() RolePermissions {
 			"GetUserProfile",
 			"CreateGoal",
 			"GetGoal",
+			"GetAllGoals",
 			"UpdateGoal",
 			"DeleteGoal",
 		},
