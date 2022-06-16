@@ -28,6 +28,13 @@ func GetRolePermissions() RolePermissions {
 			"GetAllGoals",
 			"UpdateGoal",
 			"DeleteGoal",
+			"CreateTask",
+			"GetTask",
+			"GetAllTasks",
+			"GetAllTasksByGoal",
+			"GetTaskById",
+			"UpdateTask",
+			"DeleteTask",
 		},
 	}}
 }
